@@ -7,10 +7,29 @@ const readout = document.querySelector<HTMLParagraphElement>(
 )!;
 let producers = 2;
 
-function updateText() {
+interface crewData {
+  supplyCount: number;
+  crewCount: number;
+  supplyBalance: number;
+}
+
+function updateData(): crewData {
   const supplies = producers * 3;
   const crew = 6;
   const supplyBalance = supplies - crew;
+
+  return {
+    supplyCount: supplies,
+    crewCount: crew,
+    supplyBalance: supplyBalance,
+  };
+}
+
+function updateText(data: crewData) {
+  const supplies: number = data.supplyCount;
+  const crew: number = data.crewCount;
+  const supplyBalance: number = data.supplyBalance;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let i = 0; i < 6; i++) {
     ctx.fillStyle = i < producers ? "#27766b" : "#c9d2c9";
@@ -37,15 +56,15 @@ function updateText() {
 
 document.querySelector<HTMLButtonElement>("#allocation-less")!.onclick = () => {
   producers = Math.max(0, producers - 1);
-  updateText();
+  updateText(updateData());
 };
 document.querySelector<HTMLButtonElement>("#allocation-more")!.onclick = () => {
   producers = Math.min(6, producers + 1);
-  updateText();
+  updateText(updateData());
 };
 document.querySelector<HTMLButtonElement>("#allocation-reset")!.onclick =
   () => {
     producers = 2;
-    updateText();
+    updateText(updateData());
   };
-updateText();
+updateText(updateData());

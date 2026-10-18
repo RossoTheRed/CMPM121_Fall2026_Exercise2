@@ -8,6 +8,22 @@ let x = 2;
 let y = 2;
 let direction = 0;
 
+// This is what you wanted, right?
+const commands: Record<number, { (): void }> = {
+  0: () => {
+    y = Math.max(0, y - 1);
+  },
+  1: () => {
+    x = Math.min(4, x + 1);
+  },
+  2: () => {
+    y = Math.min(4, y + 1);
+  },
+  3: () => {
+    x = Math.max(0, x - 1);
+  },
+};
+
 function drawRover() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = "#718881";
@@ -33,10 +49,7 @@ function drawRover() {
 }
 
 document.querySelector<HTMLButtonElement>("#rover-forward")!.onclick = () => {
-  if (direction === 0) y = Math.max(0, y - 1);
-  if (direction === 1) x = Math.min(4, x + 1);
-  if (direction === 2) y = Math.min(4, y + 1);
-  if (direction === 3) x = Math.max(0, x - 1);
+  commands[direction]();
   drawRover();
 };
 document.querySelector<HTMLButtonElement>("#rover-right")!.onclick = () => {

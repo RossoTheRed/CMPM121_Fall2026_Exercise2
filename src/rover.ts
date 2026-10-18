@@ -3,26 +3,34 @@ export {};
 const canvas = document.querySelector<HTMLCanvasElement>("#rover-canvas")!;
 const ctx = canvas.getContext("2d")!;
 const readout = document.querySelector<HTMLParagraphElement>("#rover-readout")!;
-const headings = ["North", "East", "South", "West"];
 let x = 2;
 let y = 2;
 let direction = 0;
 
+interface roverCommand {
+  dir: string;
+  move: number[];
+}
+
 // This is what you wanted, right?
-const commands: Record<number, { (): void }> = {
-  0: () => {
-    y = Math.max(0, y - 1);
-  },
-  1: () => {
-    x = Math.min(4, x + 1);
-  },
-  2: () => {
-    y = Math.min(4, y + 1);
-  },
-  3: () => {
-    x = Math.max(0, x - 1);
-  },
+const commands: Record<number, roverCommand> = {
+  0: { dir: "North", move: [0, -1] },
+  1: { dir: "East", move: [1, 0] },
+  2: { dir: "South", move: [0, 1] },
+  3: { dir: "West", move: [-1, 0] },
 };
+
+function moveRover(dir: number[]) {
+  x += dir[0];
+  // Limit x to 0 <= x <= 4
+  x = Math.max(0, x);
+  x = Math.min(4, x);
+
+  y += dir[1];
+  // Same with y
+  y = Math.max(0, y);
+  y = Math.min(4, y);
+}
 
 function drawRover() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -44,12 +52,13 @@ function drawRover() {
   ctx.fill();
   ctx.restore();
   readout.textContent = `Position: (${x}, ${y}) · Facing: ${
-    headings[direction]
+    commands[direction].dir
   }`;
 }
 
 document.querySelector<HTMLButtonElement>("#rover-forward")!.onclick = () => {
-  commands[direction]();
+  const movement = commands[direction].move;
+  moveRover(movement);
   drawRover();
 };
 document.querySelector<HTMLButtonElement>("#rover-right")!.onclick = () => {

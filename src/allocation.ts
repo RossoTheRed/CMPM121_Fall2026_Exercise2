@@ -25,6 +25,11 @@ function updateData(): crewData {
   };
 }
 
+interface barData {
+  value: number;
+  color: string;
+}
+
 function updateText(data: crewData) {
   const supplies: number = data.supplyCount;
   const crew: number = data.crewCount;
@@ -38,16 +43,27 @@ function updateText(data: crewData) {
     ctx.font = "16px system-ui";
     ctx.fillText(String(i + 1), 31 + i * 45, 40);
   }
+
   ctx.fillStyle = "#233e43";
   ctx.font = "14px system-ui";
   ctx.fillText(`Producers: ${producers} / 6`, 18, 76);
-  ctx.fillText(`Production: ${supplies}`, 18, 102);
-  ctx.fillStyle = "#27766b";
-  ctx.fillRect(18, 110, supplies * 14, 20);
-  ctx.fillStyle = "#233e43";
-  ctx.fillText(`Consumption: ${crew}`, 18, 154);
-  ctx.fillStyle = "#a44d23";
-  ctx.fillRect(18, 162, crew * 14, 20);
+
+  const barInfo: Record<string, barData> = {
+    "Production": { value: supplies, color: "#27766b" },
+    "Consumption": { value: crew, color: "#a44d23" },
+  };
+
+  let barHeight = 110; // Magic number, sorry. Idk how to fix this
+  for (const key in barInfo) {
+    const val = barInfo[key];
+
+    ctx.fillStyle = "#233e43"; // Text fill color
+    ctx.fillText(`${key}: ${val.value}`, 18, barHeight - 8);
+    ctx.fillStyle = val.color; // Box fill color
+    ctx.fillRect(18, barHeight, val.value * 14, 20);
+    barHeight += 52;
+  }
+
   readout.textContent =
     `Assigned: ${producers}/6 · Production: ${supplies} · Consumption: ${crew} · Balance: ${
       supplyBalance > 0 ? "+" : ""

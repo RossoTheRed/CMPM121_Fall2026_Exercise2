@@ -12,13 +12,14 @@ interface roverCommand {
   move: number[];
 }
 
-// This is what you wanted, right?
 const commands: Record<number, roverCommand> = {
   0: { dir: "North", move: [0, -1] },
   1: { dir: "East", move: [1, 0] },
   2: { dir: "South", move: [0, 1] },
   3: { dir: "West", move: [-1, 0] },
 };
+
+const commandQ: roverCommand[] = [];
 
 function moveRover(dir: number[]) {
   x += dir[0];
@@ -30,6 +31,45 @@ function moveRover(dir: number[]) {
   // Same with y
   y = Math.max(0, y);
   y = Math.min(4, y);
+}
+
+// Enqueues the command to the end of the queue
+function enqueue(com: roverCommand) {
+  commandQ.push(com);
+  console.log(`Command enqueued: Move ${com.dir}`);
+  updateQueueStatus();
+}
+
+function updateQueueStatus() {
+  let newStatus = "";
+  for (const com of commandQ) {
+    if (newStatus.length == 0) {
+      newStatus = `${com.dir}`;
+    } else {
+      newStatus = newStatus + `, ${com.dir}`;
+    }
+  }
+
+  queueText.textContent = newStatus;
+}
+
+function runCommands() {
+  console.log(`Running ${commandQ.length} commands!`);
+  for (const com of commandQ) {
+    console.log(`\tMoving rover ${com.dir}`);
+    moveRover(com.move);
+    drawRover();
+  }
+  console.log("Finished running!");
+  clearCommands();
+}
+
+function clearCommands() {
+  console.log(`Clearing ${commandQ.length} commands from the queue`);
+  commandQ.splice(0);
+
+  clearButton.disabled = true;
+  queueText.textContent = "Empty";
 }
 
 function drawRover() {
@@ -56,14 +96,26 @@ function drawRover() {
   }`;
 }
 
+const runButton = document.querySelector<HTMLButtonElement>("#rover-run")!;
+const clearButton = document.querySelector<HTMLButtonElement>("#rover-clear")!;
+const queueText = document.querySelector<HTMLButtonElement>(
+  "#rover-queue-status",
+)!;
+
+runButton.disabled = false;
+clearButton.disabled = false;
+
+runButton.addEventListener("click", runCommands);
+clearButton.addEventListener("click", clearCommands);
+
 document.querySelector<HTMLButtonElement>("#rover-forward")!.onclick = () => {
-  const movement = commands[direction].move;
-  moveRover(movement);
-  drawRover();
+  enqueue(commands[direction]);
 };
 document.querySelector<HTMLButtonElement>("#rover-right")!.onclick = () => {
   direction = (direction + 1) % 4;
-  drawRover();
+  readout.textContent = `Position: (${x}, ${y}) · Facing: ${
+    commands[direction].dir
+  }`;
 };
 document.querySelector<HTMLButtonElement>("#rover-reset")!.onclick = () => {
   x = 2;
@@ -72,3 +124,4 @@ document.querySelector<HTMLButtonElement>("#rover-reset")!.onclick = () => {
   drawRover();
 };
 drawRover();
+updateQueueStatus();

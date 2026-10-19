@@ -13,15 +13,18 @@ const diagnostic = document.querySelector<HTMLParagraphElement>(
 let panel: HTMLParagraphElement | null = null;
 let panelUpdates = 0;
 
-class shieldClass {
+// https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/EventTarget
+class shieldClass extends EventTarget {
   maxCharge: number;
-  currentCharge: number;
+  currCharge: number;
   missingCharge: number;
 
   constructor(initialCharge: number = 0) {
+    super();
+
     this.maxCharge = 10;
     // Clamp initialCharge to be within [0,maxCharge]
-    this.currentCharge = Math.min(this.maxCharge, Math.max(0, initialCharge));
+    this.currCharge = Math.min(this.maxCharge, Math.max(0, initialCharge));
 
     this.missingCharge = 0;
     this.calcMissingCharge();
@@ -34,10 +37,12 @@ class shieldClass {
     }
 
     console.log(`Recharging shield by ${chargeAmount}`);
-    this.currentCharge += chargeAmount;
-    this.currentCharge = Math.min(this.maxCharge, this.currentCharge);
+    this.currCharge += chargeAmount;
+    this.currCharge = Math.min(this.maxCharge, this.currCharge);
 
     this.calcMissingCharge();
+
+    this.AnnounceValueChange();
   }
 
   Damage(damageAmount: number = 1) {
@@ -48,18 +53,28 @@ class shieldClass {
 
     console.log(`Damaging shield by ${damageAmount}`);
 
-    this.currentCharge -= damageAmount;
-    this.currentCharge = Math.max(0, this.currentCharge);
+    this.currCharge -= damageAmount;
+    this.currCharge = Math.max(0, this.currCharge);
 
     this.calcMissingCharge();
+
+    this.AnnounceValueChange();
   }
 
   SetCharge(newCharge: number) {
-    this.currentCharge = Math.min(this.maxCharge, Math.max(0, newCharge));
+    this.currCharge = Math.min(this.maxCharge, Math.max(0, newCharge));
+
+    this.AnnounceValueChange();
   }
 
   private calcMissingCharge() {
-    this.missingCharge = this.maxCharge - this.currentCharge;
+    this.missingCharge = this.maxCharge - this.currCharge;
+  }
+
+  AnnounceValueChange() {
+    this.dispatchEvent(
+      new CustomEvent("ShieldChange", { detail: this.currCharge }),
+    );
   }
 }
 
@@ -68,14 +83,14 @@ const shield = new shieldClass();
 function drawMeter() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let i = 0; i < 10; i++) {
-    ctx.fillStyle = i < shield.currentCharge ? "#27766b" : "#c9d2c9";
+    ctx.fillStyle = i < shield.currCharge ? "#27766b" : "#c9d2c9";
     ctx.fillRect(12 + i * 28, 24, 24, 48);
   }
   ctx.fillStyle = "#233e43";
   ctx.font = "16px system-ui";
-  ctx.fillText(`${shield.currentCharge} / ${shield.maxCharge} shield`, 12, 100);
+  ctx.fillText(`${shield.currCharge} / ${shield.maxCharge} shield`, 12, 100);
   readout.textContent =
-    `Shield charge: ${shield.currentCharge} / ${shield.maxCharge}`;
+    `Shield charge: ${shield.currCharge} / ${shield.maxCharge}`;
 }
 
 function updateStats() {
@@ -87,7 +102,7 @@ function updateStats() {
 function renderStats() {
   if (!panel) return;
   panel.textContent =
-    `Shield charge: ${shield.currentCharge} · Missing charge: ${shield.missingCharge}`;
+    `Shield charge: ${shield.currCharge} · Missing charge: ${shield.missingCharge}`;
 }
 /**
  * @deprecated Use new ShieldClass and its methods instead
@@ -97,21 +112,21 @@ function _setCount(_next: number) {
     "this function has been deprecated. Please use the new ShieldClass and its methods instead.",
   );
 }
-
-document.querySelector<HTMLButtonElement>("#counter-less")!.onclick = () => {
+const lessButton = document.querySelector<HTMLButtonElement>("#counter-less")!;
+lessButton.onclick = () => {
   shield.Damage();
-  drawMeter();
-  if (panel) updateStats();
 };
-document.querySelector<HTMLButtonElement>("#counter-more")!.onclick = () => {
+
+const moreButton = document.querySelector<HTMLButtonElement>("#counter-more")!;
+moreButton.onclick = () => {
   shield.Recharge();
-  drawMeter();
-  if (panel) updateStats();
 };
-document.querySelector<HTMLButtonElement>("#counter-reset")!.onclick = () => {
+
+const resetButton = document.querySelector<HTMLButtonElement>(
+  "#counter-reset",
+)!;
+resetButton.onclick = () => {
   shield.SetCharge(0);
-  drawMeter();
-  if (panel) updateStats();
 };
 document.querySelector<HTMLButtonElement>("#counter-open")!.onclick = () => {
   if (panel) return;
@@ -124,4 +139,14 @@ document.querySelector<HTMLButtonElement>("#counter-close")!.onclick = () => {
   panel.remove();
   panel = null;
 };
+
+shield.addEventListener(
+  "ShieldChange",
+  () => {
+    drawMeter();
+    if (panel) updateStats();
+  },
+);
+console.log(`Is shield null: ${shield == null}`);
+
 drawMeter();

@@ -50,7 +50,7 @@ function updateQueueStatus() {
     }
   }
 
-  queueText.textContent = newStatus;
+  queueText.textContent = (newStatus.length > 0) ? newStatus : "Empty";
 }
 
 function runCommands() {

@@ -13,8 +13,11 @@ const diagnostic = document.querySelector<HTMLParagraphElement>(
 let panel: HTMLParagraphElement | null = null;
 let panelUpdates = 0;
 
+// Thank you Professor Smith
+const SHIELD_CHANGE_EVENT = "ShieldChange";
+
 // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/EventTarget
-class shieldClass extends EventTarget {
+class Shield extends EventTarget {
   maxCharge: number;
   currCharge: number;
   missingCharge: number;
@@ -36,7 +39,6 @@ class shieldClass extends EventTarget {
       return;
     }
 
-    console.log(`Recharging shield by ${chargeAmount}`);
     this.currCharge += chargeAmount;
     this.currCharge = Math.min(this.maxCharge, this.currCharge);
 
@@ -50,8 +52,6 @@ class shieldClass extends EventTarget {
       console.error("damageAmount cannot be less than 1!");
       return;
     }
-
-    console.log(`Damaging shield by ${damageAmount}`);
 
     this.currCharge -= damageAmount;
     this.currCharge = Math.max(0, this.currCharge);
@@ -72,13 +72,14 @@ class shieldClass extends EventTarget {
   }
 
   AnnounceValueChange() {
+    // https://medium.com/@ahmedbe/understanding-custom-events-in-javascript-243632035467
     this.dispatchEvent(
-      new CustomEvent("ShieldChange", { detail: this.currCharge }),
+      new CustomEvent(SHIELD_CHANGE_EVENT, { detail: this.currCharge }),
     );
   }
 }
 
-const shield = new shieldClass();
+const shield = new Shield();
 
 function drawMeter() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -93,25 +94,18 @@ function drawMeter() {
     `Shield charge: ${shield.currCharge} / ${shield.maxCharge}`;
 }
 
-function updateStats() {
+function updatePanel() {
   panelUpdates++;
   diagnostic.textContent = `Inspector deliveries: ${panelUpdates}`;
-  renderStats();
+  renderPanel();
 }
 
-function renderStats() {
+function renderPanel() {
   if (!panel) return;
   panel.textContent =
     `Shield charge: ${shield.currCharge} · Missing charge: ${shield.missingCharge}`;
 }
-/**
- * @deprecated Use new ShieldClass and its methods instead
- */
-function _setCount(_next: number) {
-  console.error(
-    "this function has been deprecated. Please use the new ShieldClass and its methods instead.",
-  );
-}
+
 const lessButton = document.querySelector<HTMLButtonElement>("#counter-less")!;
 lessButton.onclick = () => {
   shield.Damage();
@@ -128,25 +122,45 @@ const resetButton = document.querySelector<HTMLButtonElement>(
 resetButton.onclick = () => {
   shield.SetCharge(0);
 };
-document.querySelector<HTMLButtonElement>("#counter-open")!.onclick = () => {
+
+const panelOpenButton = document.querySelector<HTMLButtonElement>(
+  "#counter-open",
+)!;
+panelOpenButton.onclick = () => {
   if (panel) return;
   panel = document.createElement("p");
   host.append(panel);
-  renderStats();
-};
-document.querySelector<HTMLButtonElement>("#counter-close")!.onclick = () => {
-  if (!panel) return;
-  panel.remove();
-  panel = null;
+  renderPanel();
+
+  shield.addEventListener(SHIELD_CHANGE_EVENT, onShieldChanged);
+
+  panelCloseButton.disabled = false;
+  panelOpenButton.disabled = true;
 };
 
+const panelCloseButton = document.querySelector<HTMLButtonElement>(
+  "#counter-close",
+)!;
+panelCloseButton.onclick = () => {
+  if (!panel) return;
+
+  shield.removeEventListener(SHIELD_CHANGE_EVENT, onShieldChanged);
+
+  panel.remove();
+  panel = null;
+
+  panelCloseButton.disabled = true;
+  panelOpenButton.disabled = false;
+};
+
+function onShieldChanged() {
+  updatePanel();
+}
 shield.addEventListener(
-  "ShieldChange",
+  SHIELD_CHANGE_EVENT,
   () => {
     drawMeter();
-    if (panel) updateStats();
   },
 );
-console.log(`Is shield null: ${shield == null}`);
 
 drawMeter();
